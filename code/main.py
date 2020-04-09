@@ -73,13 +73,13 @@ if __name__ == '__main__':
             valid_err_list.append(valid_err)
             last_valid_errs = valid_err_list[-5:]
             # we expect validation error to decrease as k grows
-            # stop if the validation error has been increasing for the last 5 k
+            # stop if the validation error has been increasing for the last 5 k's
             if (last_valid_errs == sorted(last_valid_errs)):
                 break  # model is becoming too simple
 
         model = KNN(k=k_opt)
         model.fit(X_train_deskewed, y)
-        y_pred = model.predict(pca.compress(X_test_deskewed))
+        y_pred = model.predict(X_test_deskewed)
         test_error = np.mean(y_pred != ytest)
         print("KNN test error for k=%d: %.5f" % (k_opt, test_error))
     else:
