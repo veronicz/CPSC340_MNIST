@@ -13,7 +13,6 @@ from deskewing import deskewMNIST
 from knn import KNN
 from linear_model import softmaxClassifier
 from mlp_optimizer import optimize
-from neural_net import NeuralNet
 
 
 def load_dataset(filename):
@@ -52,7 +51,7 @@ def loadDeskewedMNIST():
     return X_train_deskewed, y, X_test_deskewed, ytest
 
 
-def optimizeSoftmaxHyper():
+def optimizeSoftmaxHyper(verbose=0):
     lambda_list = [5, 1, 0.01, 1e-3]
     alpha_list = [1e-3, 1e-4]
     maxEvals_list = [100, 500, 1000, 5000, 10000]
@@ -65,7 +64,12 @@ def optimizeSoftmaxHyper():
                     lammy=lammy, maxEvals=maxEvals, alphaInit=alpha)
                 val_err = cross_validate_error(
                     model, X_train_deskewed, y, 5)
-                if (val_err <= min_err):  # choose the simper model if error is the same
+
+                if verbose > 0:
+                    print(
+                        f"Error for lambda={lammy}, maxEvals={maxEvals}, alpha={alpha}: ", val_err)
+
+                if val_err <= min_err:  # choose the simper model if error is the same
                     min_err = val_err
                     lammy_opt, maxEvals_opt, alpha_opt = lammy, maxEvals, alpha
 
@@ -73,29 +77,43 @@ def optimizeSoftmaxHyper():
                 last_val_err = val_err_list[-1:]
                 # we expect validation error to decrease as we run more iterations of gradient descent
                 # stop if the validation error has not decreased enough to justify long runtime
-                if (last_val_err - val_err < tol):
+                if last_val_err - val_err < tol:
+                    if verbose > 0:
+                        print(
+                            "Pruning because validation error did not improve enough...")
                     break
                 val_err_list.append(val_err)
+    if verbose > 0:
+        print(f"Best lambda={lammy}, maxEvals={maxEvals}, alpha={alpha}")
+
     return lammy_opt, maxEvals_opt, alpha_opt
 
 
-def optimizeKNNHyper():
+def optimizeKNNHyper(verbose=0):
     min_err = 1
     k_opt = 1
     k_list = range(1, 30)
-    valid_err_list = [1]
+    val_err_list = [1]
     for k in k_list:
-        valid_err = cross_validate_error(KNN(k=k), X_train_deskewed, y, 5)
-        if (valid_err <= min_err):  # choose the simper model if error is the same
-            min_err = valid_err
+        val_err = cross_validate_error(KNN(k=k), X_train_deskewed, y, 5)
+        if verbose > 0:
+            print(
+                f"Error for k={k}: ", val_err)
+        if val_err <= min_err:  # choose the simper model if error is the same
+            min_err = val_err
             k_opt = k
 
-        valid_err_list.append(valid_err)
-        last_valid_errs = valid_err_list[-5:]
+        val_err_list.append(val_err)
+        last_val_errs = val_err_list[-5:]
         # we expect validation error to decrease as k grows
         # stop if the validation error has been increasing for the last 5 k's
-        if (last_valid_errs == sorted(last_valid_errs)):
+        if last_val_errs == sorted(last_val_errs):
+            if verbose > 0:
+                print("Pruning because validation error is increasing...")
             break  # model is becoming too simple
+
+        if verbose > 0:
+            print("Best k selected: ", k_opt)
     return k_opt
 
 
@@ -126,7 +144,8 @@ if __name__ == '__main__':
             lammy=lammy, maxEvals=maxEvals, alphaInit=alpha)
         model.fit(X_train_deskewed, y)
         y_pred = model.predict(X_test_deskewed)
-        print("Softmax test error %.5f" % np.mean(y_pred != ytest))
+        print(f"Softmax test error for lammy={lammy}, maxEvals={maxEvals}, alpha={alpha}: %.5f" % np.mean(
+            y_pred != ytest))
 
     else:
         print("Unknown question: %s" % question)
