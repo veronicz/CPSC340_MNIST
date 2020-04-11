@@ -11,6 +11,8 @@ from sklearn.preprocessing import LabelBinarizer
 
 from knn import KNN
 from deskewing import deskewMNIST
+import time
+from mlp_optimizer import optimize
 
 
 def load_dataset(filename):
@@ -82,5 +84,24 @@ if __name__ == '__main__':
         y_pred = model.predict(X_test_deskewed)
         test_error = np.mean(y_pred != ytest)
         print("KNN test error for k=%d: %.5f" % (k_opt, test_error))
+
+    elif question == "MLP":
+        X_train_deskewed, y, X_test_deskewed, ytest = loadDeskewedMNIST()
+        binarizer = LabelBinarizer()
+        Y = binarizer.fit_transform(y)
+
+        t = time.time()
+        model, params = optimize(X_train_deskewed, Y, 5, verbose=1)
+        print("Hyperparameter tuning took %d seconds" % (time.time()-t))
+
+        t = time.time()
+        model.fit(X_train_deskewed, Y)
+        print("Fitting took %d seconds" % (time.time()-t))
+
+        # Compute test error
+        yhat = model.predict(X_test_deskewed)
+        testError = np.mean(yhat != ytest)
+        print(f"MLP test error for {params}= ", testError)
+
     else:
         print("Unknown question: %s" % question)
