@@ -2,6 +2,7 @@ import argparse
 import gzip
 import os
 import pickle
+import time
 
 import numpy as np
 from numpy.linalg import norm
@@ -12,6 +13,7 @@ from sklearn.preprocessing import LabelBinarizer
 from deskewing import deskewMNIST
 from knn import KNN
 from linear_model import MultiClassSVM, SoftmaxClassifier
+from mlp_optimizer import optimize
 from optimizer import optimizeLR, optimizeSVM
 
 
@@ -131,6 +133,24 @@ if __name__ == '__main__':
         y_pred = model.predict(X_test_deskewed)
         test_err = np.mean(y_pred != ytest)
         print(f"SVM test error for {hyperparams}: %.5f" % test_err)
+
+    elif question == "MLP":
+        X_train_deskewed, y, X_test_deskewed, ytest = loadDeskewedMNIST()
+        binarizer = LabelBinarizer()
+        Y = binarizer.fit_transform(y)
+
+        t = time.time()
+        model, params = optimize(X_train_deskewed, Y, 5, verbose=1)
+        print("Hyperparameter tuning took %d seconds" % (time.time()-t))
+
+        t = time.time()
+        model.fit(X_train_deskewed, Y)
+        print("Fitting took %d seconds" % (time.time()-t))
+
+        # Compute test error
+        yhat = model.predict(X_test_deskewed)
+        testError = np.mean(yhat != ytest)
+        print(f"MLP test error for {params}= ", testError)
 
     else:
         print("Unknown question: %s" % question)
