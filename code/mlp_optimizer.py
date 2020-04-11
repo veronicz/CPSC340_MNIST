@@ -5,10 +5,10 @@ from neural_net import NeuralNet
 def optimize(X, Y, n_folds, verbose=0):
     parameter_space = {
         'hidden_layer_sizes': [[200], [500]],
-        'lammy': [1, 1e-3],
+        'lammy': [5, 1, 1e-3],
         'alpha': [1e-3, 1e-4],
-        'batch_size': [500, 1000, 10000],
-        'epochs': [100, 300]
+        'batch_size': [200, 500, 700],
+        'epochs': [100, 1000, 10000]
     }
     model = NeuralNet()
     clf = GridSearchCV(model, parameter_space,
