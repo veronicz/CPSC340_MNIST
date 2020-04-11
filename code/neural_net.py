@@ -27,6 +27,8 @@ def unflatten_weights(weights_flat, layer_sizes):
         weights.append((W, b))
     return weights
 
+# softmax - use logsumexp trick to avoid overflow
+
 
 def log_sum_exp(Z):
     Z_max = np.max(Z, axis=1)
@@ -54,9 +56,8 @@ class NeuralNet(BaseEstimator, ClassifierMixin):
 
         yhat = Z
 
-        if self.classification:  # softmax- TODO: use logsumexp trick to avoid overflow
+        if self.classification:
             tmp = np.sum(np.exp(yhat), axis=1)
-            # f = -np.sum(yhat[y.astype(bool)] - np.log(tmp))
             f = -np.sum(yhat[y.astype(bool)] - log_sum_exp(yhat))
             grad = np.exp(yhat) / tmp[:, None] - y
         else:  # L2 loss
@@ -109,8 +110,7 @@ class NeuralNet(BaseEstimator, ClassifierMixin):
         # START SGD
         n = X.shape[0]
         batch_size = self.batch_size
-        for t in range(self.epochs):  # max_iter is epochs here
-
+        for t in range(self.epochs):
             batch = np.random.choice(n, size=batch_size, replace=False)
 
             f, g = self.funObj(weights_flat, X[batch], y[batch])
