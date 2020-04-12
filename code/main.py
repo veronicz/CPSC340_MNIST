@@ -144,7 +144,7 @@ if __name__ == '__main__':
 
         t = time.time()
         lammy, maxEvals, alpha = optimizeLinearClassifierHyper(
-            fier, X_train_deskewed, y)
+            SoftmaxClassifier, X_train_deskewed, y)
         print("Hyperparameter tuning took %d seconds" % (time.time()-t))
 
         t = time.time()
