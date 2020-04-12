@@ -2,6 +2,7 @@ import argparse
 import gzip
 import os
 import pickle
+import time
 
 import numpy as np
 from numpy.linalg import norm
@@ -11,8 +12,7 @@ from sklearn.preprocessing import LabelBinarizer
 
 from deskewing import deskewMNIST
 from knn import KNN
-from linear_model import softmaxClassifier
-from mlp_optimizer import optimize
+from linear_model import MultiClassSVM, SoftmaxClassifier
 
 
 def load_dataset(filename):
@@ -51,7 +51,7 @@ def loadDeskewedMNIST():
     return X_train_deskewed, y, X_test_deskewed, ytest
 
 
-def optimizeSoftmaxHyper(verbose=0):
+def optimizeLinearClassifierHyper(modelConstructor, X, y, verbose=0):
     lambda_list = [5, 1, 0.01, 1e-3]
     alpha_list = [1e-3, 1e-4]
     maxEvals_list = [100, 500, 1000, 5000, 10000]
@@ -60,16 +60,15 @@ def optimizeSoftmaxHyper(verbose=0):
         for alpha in alpha_list:
             val_err_list = [1]
             for maxEvals in maxEvals_list:
-                model = softmaxClassifier(
+                model = modelConstructor(
                     lammy=lammy, maxEvals=maxEvals, alphaInit=alpha)
-                val_err = cross_validate_error(
-                    model, X_train_deskewed, y, 5)
+                val_err = cross_validate_error(model, X, y, 5)
 
                 if verbose > 0:
                     print(
                         f"Error for lambda={lammy}, maxEvals={maxEvals}, alpha={alpha}: ", val_err)
 
-                if val_err <= min_err:  # choose the simper model if error is the same
+                if val_err < min_err:
                     min_err = val_err
                     lammy_opt, maxEvals_opt, alpha_opt = lammy, maxEvals, alpha
 
@@ -127,25 +126,56 @@ if __name__ == '__main__':
     if question == "KNN":
         X_train_deskewed, y, X_test_deskewed, ytest = loadDeskewedMNIST()
 
+        t = time.time()
         k_opt = optimizeKNNHyper()
+        print("Hyperparameter tuning took %d seconds" % (time.time()-t))
 
+        t = time.time()
         model = KNN(k=k_opt)
         model.fit(X_train_deskewed, y)
+        print("Fitting took %d seconds" % (time.time()-t))
+
         y_pred = model.predict(X_test_deskewed)
-        test_error = np.mean(y_pred != ytest)
-        print("KNN test error for k=%d: %.5f" % (k_opt, test_error))
+        test_err = np.mean(y_pred != ytest)
+        print("KNN test error for k=%d: %.5f" % (k_opt, test_err))
 
     elif question == "LR":
         X_train_deskewed, y, X_test_deskewed, ytest = loadDeskewedMNIST()
 
-        lammy, maxEvals, alpha = optimizeSoftmaxHyper()
+        t = time.time()
+        lammy, maxEvals, alpha = optimizeLinearClassifierHyper(
+            fier, X_train_deskewed, y)
+        print("Hyperparameter tuning took %d seconds" % (time.time()-t))
 
-        model = softmaxClassifier(
+        t = time.time()
+        model = SoftmaxClassifier(
             lammy=lammy, maxEvals=maxEvals, alphaInit=alpha)
         model.fit(X_train_deskewed, y)
+        print("Fitting took %d seconds" % (time.time()-t))
+
         y_pred = model.predict(X_test_deskewed)
-        print(f"Softmax test error for lammy={lammy}, maxEvals={maxEvals}, alpha={alpha}: %.5f" % np.mean(
-            y_pred != ytest))
+        test_err = np.mean(y_pred != ytest)
+        print(
+            f"Softmax test error for lammy={lammy}, maxEvals={maxEvals}, alpha={alpha}: %.5f: " % test_err)
+
+    elif question == "SVM":
+        X_train_deskewed, y, X_test_deskewed, ytest = loadDeskewedMNIST()
+
+        t = time.time()
+        lammy, maxEvals, alpha = optimizeLinearClassifierHyper(
+            MultiClassSVM, X_train_deskewed, y)
+        print("Hyperparameter tuning took %d seconds" % (time.time()-t))
+
+        t = time.time()
+        model = MultiClassSVM(lammy=lammy, maxEvals=maxEvals,
+                              alphaInit=alpha, verbose=1)
+        model.fit(X_train_deskewed, y)
+        print("Fitting took %d seconds" % (time.time()-t))
+
+        y_pred = model.predict(X_test_deskewed)
+        test_err = np.mean(y_pred != ytest)
+        print(
+            f"SVM test error for lammy={lammy}, maxEvals={maxEvals}, alpha={alpha}: %.5f: " % test_err)
 
     else:
         print("Unknown question: %s" % question)
