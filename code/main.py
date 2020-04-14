@@ -11,6 +11,9 @@ from sklearn.preprocessing import LabelBinarizer
 
 from knn import KNN
 from deskewing import deskewMNIST
+import time
+from cnn import CNN
+import cnn_optimizer
 
 
 def load_dataset(filename):
@@ -82,5 +85,24 @@ if __name__ == '__main__':
         y_pred = model.predict(X_test_deskewed)
         test_error = np.mean(y_pred != ytest)
         print("KNN test error for k=%d: %.5f" % (k_opt, test_error))
+
+    elif question == "CNN":
+        X_train_deskewed, y, X_test_deskewed, ytest = loadDeskewedMNIST()
+        y = y.reshape(y.shape[0], 1)
+
+        t = time.time()
+        model, hyperparams = cnn_optimizer.optimize(
+            X_train_deskewed, y, 2, verbose=1)
+        print("Hyperparameter tuning took %d seconds" % (time.time()-t))
+
+        t = time.time()
+        cnn_params = model.fit(X_train_deskewed, y)
+        np.save('CNN params', cnn_params)
+        print("Fitting took %d seconds" % (time.time()-t))
+
+        y_pred = model.predict(X_test_deskewed)
+        test_err = np.mean(y_pred != ytest)
+        print(f"CNN test error for {hyperparams}:  %.5f" % (test_err))
+
     else:
         print("Unknown question: %s" % question)
