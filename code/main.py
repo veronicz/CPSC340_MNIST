@@ -13,6 +13,7 @@ from sklearn.preprocessing import LabelBinarizer
 from deskewing import deskewMNIST
 from knn import KNN
 from linear_model import MultiClassSVM, SoftmaxClassifier
+from svm_optimizer import optimizeLR, optimizeSVM
 
 
 def load_dataset(filename):
@@ -49,43 +50,6 @@ def loadDeskewedMNIST():
         X_test_deskewed = np.load("X_test_deskewed.npy")
 
     return X_train_deskewed, y, X_test_deskewed, ytest
-
-
-def optimizeLinearClassifierHyper(modelConstructor, X, y, verbose=0):
-    lambda_list = [5, 1, 0.01, 1e-3]
-    alpha_list = [1e-3, 1e-4]
-    maxEvals_list = [100, 500, 1000, 5000, 10000]
-    min_err = 1
-    for lammy in lambda_list:
-        for alpha in alpha_list:
-            val_err_list = [1]
-            for maxEvals in maxEvals_list:
-                model = modelConstructor(
-                    lammy=lammy, maxEvals=maxEvals, alphaInit=alpha)
-                val_err = cross_validate_error(model, X, y, 5)
-
-                if verbose > 0:
-                    print(
-                        f"Error for lambda={lammy}, maxEvals={maxEvals}, alpha={alpha}: ", val_err)
-
-                if val_err < min_err:
-                    min_err = val_err
-                    lammy_opt, maxEvals_opt, alpha_opt = lammy, maxEvals, alpha
-
-                tol = 5e-4
-                last_val_err = val_err_list[-1:]
-                # we expect validation error to decrease as we run more iterations of gradient descent
-                # stop if the validation error has not decreased enough to justify long runtime
-                if last_val_err - val_err < tol:
-                    if verbose > 0:
-                        print(
-                            "Pruning because validation error did not improve enough...")
-                    break
-                val_err_list.append(val_err)
-    if verbose > 0:
-        print(f"Best lambda={lammy}, maxEvals={maxEvals}, alpha={alpha}")
-
-    return lammy_opt, maxEvals_opt, alpha_opt
 
 
 def optimizeKNNHyper(verbose=0):
@@ -143,39 +107,31 @@ if __name__ == '__main__':
         X_train_deskewed, y, X_test_deskewed, ytest = loadDeskewedMNIST()
 
         t = time.time()
-        lammy, maxEvals, alpha = optimizeLinearClassifierHyper(
-            SoftmaxClassifier, X_train_deskewed, y)
+        model, hyperparams = optimizeLR(X_train_deskewed, y, 5, verbose=1)
         print("Hyperparameter tuning took %d seconds" % (time.time()-t))
 
         t = time.time()
-        model = SoftmaxClassifier(
-            lammy=lammy, maxEvals=maxEvals, alphaInit=alpha)
         model.fit(X_train_deskewed, y)
         print("Fitting took %d seconds" % (time.time()-t))
 
         y_pred = model.predict(X_test_deskewed)
         test_err = np.mean(y_pred != ytest)
-        print(
-            f"Softmax test error for lammy={lammy}, maxEvals={maxEvals}, alpha={alpha}: %.5f: " % test_err)
+        print(f"Softmax test error for {hyperparams}: %.5f" % test_err)
 
     elif question == "SVM":
         X_train_deskewed, y, X_test_deskewed, ytest = loadDeskewedMNIST()
 
         t = time.time()
-        lammy, maxEvals, alpha = optimizeLinearClassifierHyper(
-            MultiClassSVM, X_train_deskewed, y)
+        model, hyperparams = optimizeSVM(X_train_deskewed, y, 5, verbose=1)
         print("Hyperparameter tuning took %d seconds" % (time.time()-t))
 
         t = time.time()
-        model = MultiClassSVM(lammy=lammy, maxEvals=maxEvals,
-                              alphaInit=alpha, verbose=1)
         model.fit(X_train_deskewed, y)
         print("Fitting took %d seconds" % (time.time()-t))
 
         y_pred = model.predict(X_test_deskewed)
         test_err = np.mean(y_pred != ytest)
-        print(
-            f"SVM test error for lammy={lammy}, maxEvals={maxEvals}, alpha={alpha}: %.5f: " % test_err)
+        print(f"SVM test error for {hyperparams}: %.5f" % test_err)
 
     else:
         print("Unknown question: %s" % question)

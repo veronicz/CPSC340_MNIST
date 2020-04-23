@@ -2,30 +2,16 @@ import numpy as np
 
 import findMin
 
+from sklearn.base import BaseEstimator, ClassifierMixin
 
-class LinearClassifer:
+
+class SoftmaxClassifier(BaseEstimator, ClassifierMixin):
     def __init__(self, lammy=0.01, maxEvals=100, alphaInit=1e-3, verbose=0):
         self.lammy = lammy
         self.maxEvals = maxEvals
         self.alphaInit = alphaInit
         self.verbose = verbose
 
-    def fit(self, X, y):
-        n, d = X.shape
-        k = np.unique(y).size
-        self.n_classes = k
-
-        # Initial guess
-        self.W = np.zeros(k*d)
-        self.W, f = findMin.findMin(
-            self.funObj, self.W, self.maxEvals, X, y, verbose=self.verbose)
-        self.W = np.reshape(self.W, (k, d))
-
-    def predict(self, X):
-        return np.argmax(X@self.W.T, axis=1)
-
-
-class SoftmaxClassifier(LinearClassifer):
     def funObj(self, w, X, y):
         n, d = X.shape
         k = self.n_classes
@@ -49,17 +35,39 @@ class SoftmaxClassifier(LinearClassifer):
         b = np.ones((X.shape[0], 1))
         X = np.concatenate((X, b), axis=1)
 
-        super().fit(X, y)
+        n, d = X.shape
+        k = np.unique(y).size
+        self.n_classes = k
+
+        # Initial guess
+        self.W = np.zeros(k*d)
+        self.W, f = findMin.findMin(
+            self.funObj, self.W, self.maxEvals, X, y, verbose=self.verbose)
+        self.W = np.reshape(self.W, (k, d))
 
     def predict(self, X):
         # adding bias
         b = np.ones((X.shape[0], 1))
         X = np.concatenate((X, b), axis=1)
 
-        return super().predict(X)
+        return np.argmax(X@self.W.T, axis=1)
+
+    def predict_proba(self, X):
+        # adding bias
+        b = np.ones((X.shape[0], 1))
+        X = np.concatenate((X, b), axis=1)
+
+        return X@self.W.T
 
 
-class MultiClassSVM(LinearClassifer):
+class MultiClassSVM(BaseEstimator, ClassifierMixin):
+    def __init__(self, lammy=0.01, epochs=100, learning_rate=1e-3, batch_size=200, verbose=0):
+        self.lammy = lammy
+        self.epochs = epochs
+        self.learning_rate = learning_rate
+        self.batch_size = batch_size
+        self.verbose = verbose
+
     def funObj(self, w, X, y):
         n, d = X.shape
         k = self.n_classes
@@ -84,3 +92,26 @@ class MultiClassSVM(LinearClassifer):
         g = mask.T.dot(X) + self.lammy * W
 
         return f, g.flatten()
+
+    def fit(self, X, y):
+        # use stochastic sub-gradient descent
+        n, d = X.shape
+        k = np.unique(y).size
+        self.n_classes = k
+
+        # Initial guess
+        self.W = np.zeros(k*d)
+
+        # START SGDs
+        for t in range(self.epochs):
+            batch = np.random.choice(n, size=self.batch_size, replace=False)
+            f, g = self.funObj(self.W, X[batch], y[batch])
+            self.W -= self.learning_rate*g
+
+        self.W = np.reshape(self.W, (k, d))
+
+    def predict(self, X):
+        return np.argmax(X@self.W.T, axis=1)
+
+    def predict_proba(self, X):
+        return X@self.W.T
