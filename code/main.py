@@ -10,10 +10,11 @@ from scipy.ndimage import interpolation
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import LabelBinarizer
 
+from cnn import CNN
 from deskewing import deskewMNIST
 from knn import KNN
 from linear_model import MultiClassSVM, SoftmaxClassifier
-from optimizer import optimizeLR, optimizeSVM, optimizeMLP
+from optimizer import optimizeCNN, optimizeLR, optimizeMLP, optimizeSVM
 
 
 def load_dataset(filename):
@@ -21,7 +22,7 @@ def load_dataset(filename):
         return pickle.load(f)
 
 
-def cross_validate_error(model, X, ys, n_folds):
+def cross_validate_error(model, X, y, n_folds):
     v_error = []
     for train_index, test_index in KFold(n_folds).split(X):
         X_train, X_test = X[train_index], X[test_index]
@@ -139,7 +140,7 @@ if __name__ == '__main__':
         Y = binarizer.fit_transform(y)
 
         t = time.time()
-        model, params = optimize(X_train_deskewed, Y, 5, verbose=1)
+        model, params = optimizeMLP(X_train_deskewed, Y, 5, verbose=1)
         print("Hyperparameter tuning took %d seconds" % (time.time()-t))
 
         t = time.time()
@@ -150,6 +151,19 @@ if __name__ == '__main__':
         yhat = model.predict(X_test_deskewed)
         testError = np.mean(yhat != ytest)
         print(f"MLP test error for {params}= ", testError)
+
+    elif question == "CNN":
+        X_train_deskewed, y, X_test_deskewed, ytest = loadDeskewedMNIST()
+        y = y.reshape(y.shape[0], 1)
+
+        t = time.time()
+        model, hyperparams = optimizeCNN(X_train_deskewed, y, 2, verbose=1)
+        print("Hyperparameter tuning took %d seconds" % (time.time()-t))
+
+        t = time.time()
+        cnn_params = model.fit(X_train_deskewed, y)
+        np.save('CNN params', cnn_params)
+        print(f"CNN test error for {hyperparams}:  %.5f" % (test_err))
 
     else:
         print("Unknown question: %s" % question)

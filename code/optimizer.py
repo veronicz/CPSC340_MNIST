@@ -1,5 +1,7 @@
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from linear_model import MultiClassSVM, SoftmaxClassifier
+from neural_net import NeuralNet
+from cnn import CNN
 
 
 def optimizeSVM(X, y, n_folds, verbose=0):
@@ -23,7 +25,7 @@ def optimizeLR(X, y, n_folds, verbose=0):
     return optimizeClassifier(SoftmaxClassifier(), parameter_space, X, y, n_folds, verbose)
 
 
-def optimizeMLP():
+def optimizeMLP(X, y, n_folds, verbose=0):
     parameter_space = {
         'hidden_layer_sizes': [[200], [500]],
         'lammy': [5, 1, 1e-3],
@@ -35,9 +37,29 @@ def optimizeMLP():
     return optimizeClassifier(NeuralNet(), parameter_space, X, y, n_folds, verbose)
 
 
-def optimizeClassifier(model, parameter_space, X, y, n_folds, verbose):
-    clf = GridSearchCV(model, parameter_space, scoring='neg_log_loss',
-                       n_jobs=-1, cv=n_folds)
+def optimizeCNN(X, y, n_folds, verbose=0):
+    parameter_space = {
+        'n1_filters': [5, 8],
+        'n2_filters': [5, 8],
+        'filter_size': [3, 5, 8],
+        'conv_stride': [1, 2],
+        'mlp_size': [64, 128],
+        'batch_size': [32, 64],
+        'epochs': [1, 2],
+        'learning_rate': [0.01, 1e-3],
+        'beta1': [0.9, 0.95, 0.99]
+    }
+
+    return optimizeClassifier(CNN(), parameter_space, X, y, n_folds, verbose, random=True)
+
+
+def optimizeClassifier(model, parameter_space, X, y, n_folds, verbose, random=False):
+    if random:
+        clf = RandomizedSearchCV(model, parameter_space, scoring='neg_log_loss',
+                                 n_jobs=-1, cv=n_folds, n_iter=50)
+    else:
+        clf = GridSearchCV(model, parameter_space,
+                           scoring='neg_log_loss', n_jobs=-1, cv=n_folds)
     clf.fit(X, y)
 
     if verbose > 0:

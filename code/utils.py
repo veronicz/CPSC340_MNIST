@@ -1,6 +1,7 @@
 import os.path
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
 from scipy import stats
 from scipy.optimize import approx_fprime
 from scipy.spatial import distance
@@ -77,21 +78,24 @@ def check_gradient(model, X, y):
         print('User and numerical derivatives agree.')
 
 
-def check_gradient_dimen(model, X, y, dimensionality, verbose=True):
-    # This checks that the gradient implementation is correct
-    w = np.random.rand(dimensionality)
-    f, g = model.funObj(w, X, y)
+def initializeFilter(size, scale=1.0):
+    '''
+    Initialize filter using a normal distribution with and a
+    standard deviation inversely proportional the square root of the number of units
+    '''
+    stddev = scale/np.sqrt(np.prod(size))
+    return np.random.normal(loc=0, scale=stddev, size=size)
 
-    # Check the gradient
-    estimated_gradient = approx_fprime(w,
-                                       lambda w: model.funObj(w, X, y)[0],
-                                       epsilon=1e-6)
 
-    implemented_gradient = model.funObj(w, X, y)[1]
+def initializeWeight(size):
+    '''
+    Initialize weights with a random normal distribution
+    '''
+    return np.random.standard_normal(size=size) * 0.01
 
-    if np.max(np.abs(estimated_gradient - implemented_gradient) > 1e-3):
-        raise Exception('User and numerical derivatives differ:\n%s\n%s' %
-                        (estimated_gradient[:5], implemented_gradient[:5]))
-    else:
-        if verbose:
-            print('User and numerical derivatives agree.')
+
+def categoricalCrossEntropy(probs, label):
+    '''
+    calculate the categorical cross-entropy loss of the predictions
+    '''
+    return -np.sum(label * np.log(probs))
