@@ -23,6 +23,18 @@ def optimizeLR(X, y, n_folds, verbose=0):
     return optimizeClassifier(SoftmaxClassifier(), parameter_space, X, y, n_folds, verbose)
 
 
+def optimizeMLP():
+    parameter_space = {
+        'hidden_layer_sizes': [[200], [500]],
+        'lammy': [5, 1, 1e-3],
+        'alpha': [1e-3, 1e-4],
+        'batch_size': [200, 500, 700],
+        'epochs': [100, 1000, 10000]
+    }
+
+    return optimizeClassifier(NeuralNet(), parameter_space, X, y, n_folds, verbose)
+
+
 def optimizeClassifier(model, parameter_space, X, y, n_folds, verbose):
     clf = GridSearchCV(model, parameter_space, scoring='neg_log_loss',
                        n_jobs=-1, cv=n_folds)

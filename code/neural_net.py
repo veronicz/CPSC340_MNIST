@@ -27,9 +27,8 @@ def unflatten_weights(weights_flat, layer_sizes):
         weights.append((W, b))
     return weights
 
+
 # softmax - use logsumexp trick to avoid overflow
-
-
 def log_sum_exp(Z):
     Z_max = np.max(Z, axis=1)
     # per-colmumn max

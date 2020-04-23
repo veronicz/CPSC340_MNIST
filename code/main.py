@@ -13,8 +13,7 @@ from sklearn.preprocessing import LabelBinarizer
 from deskewing import deskewMNIST
 from knn import KNN
 from linear_model import MultiClassSVM, SoftmaxClassifier
-from mlp_optimizer import optimize
-from optimizer import optimizeLR, optimizeSVM
+from optimizer import optimizeLR, optimizeSVM, optimizeMLP
 
 
 def load_dataset(filename):
