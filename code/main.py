@@ -9,8 +9,10 @@ from scipy.ndimage import interpolation
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import LabelBinarizer
 
-from knn import KNN
 from deskewing import deskewMNIST
+from knn import KNN
+from linear_model import MultiClassSVM, SoftmaxClassifier
+from optimizer import optimizeLR, optimizeSVM
 
 
 def load_dataset(filename):
@@ -18,7 +20,7 @@ def load_dataset(filename):
         return pickle.load(f)
 
 
-def cross_validate_error(model, X, y, n_folds):
+def cross_validate_error(model, X, ys, n_folds):
     v_error = []
     for train_index, test_index in KFold(n_folds).split(X):
         X_train, X_test = X[train_index], X[test_index]
@@ -49,6 +51,34 @@ def loadDeskewedMNIST():
     return X_train_deskewed, y, X_test_deskewed, ytest
 
 
+def optimizeKNNHyper(verbose=0):
+    min_err = 1
+    k_opt = 1
+    k_list = range(1, 30)
+    val_err_list = [1]
+    for k in k_list:
+        val_err = cross_validate_error(KNN(k=k), X_train_deskewed, y, 5)
+        if verbose > 0:
+            print(
+                f"Error for k={k}: ", val_err)
+        if val_err <= min_err:  # choose the simper model if error is the same
+            min_err = val_err
+            k_opt = k
+
+        val_err_list.append(val_err)
+        last_val_errs = val_err_list[-5:]
+        # we expect validation error to decrease as k grows
+        # stop if the validation error has been increasing for the last 5 k's
+        if last_val_errs == sorted(last_val_errs):
+            if verbose > 0:
+                print("Pruning because validation error is increasing...")
+            break  # model is becoming too simple
+
+        if verbose > 0:
+            print("Best k selected: ", k_opt)
+    return k_opt
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-q', '--question', required=True)
@@ -59,28 +89,48 @@ if __name__ == '__main__':
     if question == "KNN":
         X_train_deskewed, y, X_test_deskewed, ytest = loadDeskewedMNIST()
 
-        # 5-fold cross-validation
-        min_err = 1
-        k_opt = 1
-        k_list = range(1, 30)
-        valid_err_list = [1]
-        for k in k_list:
-            valid_err = cross_validate_error(KNN(k=k), X_train_deskewed, y, 5)
-            if (valid_err <= min_err):  # choose the simper model if error is the same
-                min_err = valid_err
-                k_opt = k
+        t = time.time()
+        k_opt = optimizeKNNHyper()
+        print("Hyperparameter tuning took %d seconds" % (time.time()-t))
 
-            valid_err_list.append(valid_err)
-            last_valid_errs = valid_err_list[-5:]
-            # we expect validation error to decrease as k grows
-            # stop if the validation error has been increasing for the last 5 k's
-            if (last_valid_errs == sorted(last_valid_errs)):
-                break  # model is becoming too simple
-
+        t = time.time()
         model = KNN(k=k_opt)
         model.fit(X_train_deskewed, y)
+        print("Fitting took %d seconds" % (time.time()-t))
+
         y_pred = model.predict(X_test_deskewed)
-        test_error = np.mean(y_pred != ytest)
-        print("KNN test error for k=%d: %.5f" % (k_opt, test_error))
+        test_err = np.mean(y_pred != ytest)
+        print("KNN test error for k=%d: %.5f" % (k_opt, test_err))
+
+    elif question == "LR":
+        X_train_deskewed, y, X_test_deskewed, ytest = loadDeskewedMNIST()
+
+        t = time.time()
+        model, hyperparams = optimizeLR(X_train_deskewed, y, 5, verbose=1)
+        print("Hyperparameter tuning took %d seconds" % (time.time()-t))
+
+        t = time.time()
+        model.fit(X_train_deskewed, y)
+        print("Fitting took %d seconds" % (time.time()-t))
+
+        y_pred = model.predict(X_test_deskewed)
+        test_err = np.mean(y_pred != ytest)
+        print(f"Softmax test error for {hyperparams}: %.5f" % test_err)
+
+    elif question == "SVM":
+        X_train_deskewed, y, X_test_deskewed, ytest = loadDeskewedMNIST()
+
+        t = time.time()
+        model, hyperparams = optimizeSVM(X_train_deskewed, y, 5, verbose=1)
+        print("Hyperparameter tuning took %d seconds" % (time.time()-t))
+
+        t = time.time()
+        model.fit(X_train_deskewed, y)
+        print("Fitting took %d seconds" % (time.time()-t))
+
+        y_pred = model.predict(X_test_deskewed)
+        test_err = np.mean(y_pred != ytest)
+        print(f"SVM test error for {hyperparams}: %.5f" % test_err)
+
     else:
         print("Unknown question: %s" % question)
