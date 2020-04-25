@@ -37,7 +37,7 @@ def log_sum_exp(Z):
 
 class NeuralNet(BaseEstimator, ClassifierMixin):
     # uses sigmoid nonlinearity
-    def __init__(self, hidden_layer_sizes=[500], lammy=1, alpha=1e-3, batch_size=500, epochs=100):
+    def __init__(self, hidden_layer_sizes=[200], lammy=0.001, alpha=1e-3, batch_size=700, epochs=10000):
         self.hidden_layer_sizes = hidden_layer_sizes
         self.lammy = lammy
         self.alpha = alpha

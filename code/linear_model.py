@@ -5,7 +5,7 @@ import findMin
 
 
 class SoftmaxClassifier(BaseEstimator, ClassifierMixin):
-    def __init__(self, lammy=0.01, maxEvals=100, alphaInit=1e-3, verbose=0):
+    def __init__(self, lammy=5, maxEvals=100, alphaInit=1e-3, verbose=0):
         self.lammy = lammy
         self.maxEvals = maxEvals
         self.alphaInit = alphaInit
@@ -60,7 +60,7 @@ class SoftmaxClassifier(BaseEstimator, ClassifierMixin):
 
 
 class MultiClassSVM(BaseEstimator, ClassifierMixin):
-    def __init__(self, lammy=0.01, epochs=100, learning_rate=1e-3, batch_size=200, verbose=0):
+    def __init__(self, lammy=5, epochs=500, learning_rate=1e-4, batch_size=1000, verbose=0):
         self.lammy = lammy
         self.epochs = epochs
         self.learning_rate = learning_rate

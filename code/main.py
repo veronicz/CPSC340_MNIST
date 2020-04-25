@@ -22,20 +22,6 @@ def load_dataset(filename):
         return pickle.load(f)
 
 
-def cross_validate_error(model, X, y, n_folds):
-    v_error = []
-    for train_index, test_index in KFold(n_folds).split(X):
-        X_train, X_test = X[train_index], X[test_index]
-        y_train, y_test = y[train_index], y[test_index]
-
-        model.fit(X_train, y_train)
-        y_pred = model.predict(X_test)
-        error = np.mean(y_pred != y_test)
-        v_error.append(error)
-
-    return np.mean(v_error)
-
-
 def loadDeskewedMNIST():
     with gzip.open(os.path.join('..', 'data', 'mnist.pkl.gz'), 'rb') as f:
         train_set, valid_set, test_set = pickle.load(f, encoding="latin1")
@@ -51,6 +37,20 @@ def loadDeskewedMNIST():
         X_test_deskewed = np.load("X_test_deskewed.npy")
 
     return X_train_deskewed, y, X_test_deskewed, ytest
+
+
+def cross_validate_error(model, X, y, n_folds):
+    v_error = []
+    for train_index, test_index in KFold(n_folds).split(X):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+
+        model.fit(X_train, y_train)
+        y_pred = model.predict(X_test)
+        error = np.mean(y_pred != y_test)
+        v_error.append(error)
+
+    return np.mean(v_error)
 
 
 def optimizeKNNHyper(verbose=0):
@@ -69,7 +69,6 @@ def optimizeKNNHyper(verbose=0):
 
         val_err_list.append(val_err)
         last_val_errs = val_err_list[-5:]
-        # we expect validation error to decrease as k grows
         # stop if the validation error has been increasing for the last 5 k's
         if last_val_errs == sorted(last_val_errs):
             if verbose > 0:

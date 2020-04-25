@@ -4,6 +4,16 @@ from neural_net import NeuralNet
 from cnn import CNN
 
 
+def optimizeLR(X, y, n_folds, verbose=0):
+    parameter_space = {
+        'lammy': [5, 1, 0.1],
+        'alphaInit': [1e-3, 1e-4],
+        'maxEvals': [100, 500, 1000]
+    }
+
+    return optimizeClassifier(SoftmaxClassifier(), parameter_space, X, y, n_folds, verbose)
+
+
 def optimizeSVM(X, y, n_folds, verbose=0):
     parameter_space = {
         'lammy': [5, 1, 0.1],
@@ -13,16 +23,6 @@ def optimizeSVM(X, y, n_folds, verbose=0):
     }
 
     return optimizeClassifier(MultiClassSVM(), parameter_space, X, y, n_folds, verbose)
-
-
-def optimizeLR(X, y, n_folds, verbose=0):
-    parameter_space = {
-        'lammy': [5, 1, 0.1],
-        'alphaInit': [1e-3, 1e-4],
-        'maxEvals': [100, 500, 1000]
-    }
-
-    return optimizeClassifier(SoftmaxClassifier(), parameter_space, X, y, n_folds, verbose)
 
 
 def optimizeMLP(X, y, n_folds, verbose=0):
@@ -46,8 +46,7 @@ def optimizeCNN(X, y, n_folds, verbose=0):
         'mlp_size': [64, 128],
         'batch_size': [32, 64],
         'epochs': [1, 2],
-        'learning_rate': [0.01, 1e-3],
-        'beta1': [0.9, 0.95, 0.99]
+        'learning_rate': [0.01, 1e-3]
     }
 
     return optimizeClassifier(CNN(), parameter_space, X, y, n_folds, verbose, random=True)

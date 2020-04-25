@@ -13,7 +13,7 @@ class CNN(BaseEstimator, ClassifierMixin):
     The network uses two consecutive convolutional layers followed by a max pooling operation to extract features from the input image. After the max pooling operation, the representation is flattened and passed through a Multi-Layer Perceptron (MLP) to carry out the task of classification.
     '''
 
-    def __init__(self, n1_filters=8, n2_filters=8, filter_size=5, conv_stride=1, mlp_size=128, beta1=0.95, beta2=0.99, learning_rate=0.01, epochs=2, batch_size=32, img_dim=28, img_depth=1):
+    def __init__(self, n1_filters=8, n2_filters=5, filter_size=8, conv_stride=1, mlp_size=128, beta1=0.95, beta2=0.99, learning_rate=0.01, epochs=2, batch_size=64, img_dim=28, img_depth=1):
         self.n1_filters = n1_filters
         self.n2_filters = n2_filters
         self.filter_size = filter_size
