@@ -147,9 +147,9 @@ if __name__ == '__main__':
         print("Fitting took %d seconds" % (time.time()-t))
 
         # Compute test error
-        yhat = model.predict(X_test_deskewed)
-        testError = np.mean(yhat != ytest)
-        print(f"MLP test error for {params}= ", testError)
+        y_pred = model.predict(X_test_deskewed)
+        test_err = np.mean(y_pred != ytest)
+        print(f"MLP test error for {params}= ", test_err)
 
     elif question == "CNN":
         X_train_deskewed, y, X_test_deskewed, ytest = loadDeskewedMNIST()
@@ -161,7 +161,10 @@ if __name__ == '__main__':
 
         t = time.time()
         cnn_params = model.fit(X_train_deskewed, y)
-        np.save('CNN params', cnn_params)
+        print("Fitting took %d seconds" % (time.time()-t))
+
+        y_pred = model.predict(X_test_deskewed)
+        test_err = np.mean(y_pred != ytest)
         print(f"CNN test error for {hyperparams}:  %.5f" % (test_err))
 
     else:
